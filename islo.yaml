@@ -10,13 +10,13 @@
 sandbox: wolfram-fb0
 
 cpu: 4
-memory_mb: 16384   # gemma4 needs ~9.8 GiB; system overhead eats another ~700 MiB. 16 GiB is safe.
-disk_gb: 40        # 9.6 GiB model + apt + brew + qemu kernel build → headroom.
+memory_mb: 8192    # gemma3:1b only needs ~1 GiB; 8 GiB leaves room for qemu inner-boot + oracle.
+disk_gb: 20        # apt + brew + ~1 GiB model + qemu kernel build → 20 GiB is plenty.
 
 env:
   WOLFRAM_DIST: /workspace/wolfram-fb0/dist
   WOLFRAM_ITER: /workspace/wolfram-fb0/iterations
-  WOLFRAM_MODEL: gemma4:e2b   # smallest gemma4 in ollama registry (7.2 GB on disk)
+  WOLFRAM_MODEL: gemma3:1b    # smallest Gemma in ollama (~815 MB, fits in any sandbox)
   WOLFRAM_FB_BRIDGE_PORT: "8910"
   WOLFRAM_BPF_BRIDGE_PORT: "8911"
   # Homebrew on Linux defaults to this prefix.

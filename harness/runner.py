@@ -100,10 +100,7 @@ class IterResult:
 def update_index(target: str, results: list[IterResult]) -> None:
     """Rewrite iterations/index.json from real results, preserving other targets'
     placeholder/real data."""
-    if INDEX_JSON.exists():
-        idx = json.loads(INDEX_JSON.read_text())
-    else:
-        idx = {"targets": {}}
+    idx: dict = json.loads(INDEX_JSON.read_text()) if INDEX_JSON.exists() else {"targets": {}}
     idx.setdefault("targets", {})
     idx["targets"][target] = [
         {

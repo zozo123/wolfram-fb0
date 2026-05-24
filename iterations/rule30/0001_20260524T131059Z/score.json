@@ -1,0 +1,12 @@
+{
+  "iter": 1,
+  "strategy": "fewshot",
+  "duration_s": 10.487763,
+  "fence_found": true,
+  "nasm_looking": true,
+  "assemble_ok": true,
+  "binary_size": 8872,
+  "pixel_diff_pct": 100.0,
+  "pixels_off": 1,
+  "pixels_total": 1
+}

@@ -1,0 +1,133 @@
+```nasm
+; rule30_reference.s — hand-written x86_64 Rule 30 → PPM stdout.
+; Acts as the "gold standard" the oracle compares the agent's output agains
+against.
+; Build:  nasm -felf64 src/rule30_reference.s -o dist/rule30_reference.o
+;         ld -o dist/rule30_reference.elf dist/rule30_reference.o
+; Run:    ./dist/rule30_reference.elf --ppm > rule30.ppm
+;
+; This binary does the minimum: write a PPM header to stdout, then for each
+each of
+; H rows emit RGB pixels for the current automaton row, then update the row
+row
+; with the Rule 30 transition (new = left XOR (center OR right)).
+;
+; No libc. Two syscalls only: write(1) and exit_group(60).
+
+BITS 64
+
+%define W 800
+%define H 320
+%define SYS_write 1
+%define SYS_exit 60
+%define STDOUT    1
+
+section .rodata
+ppm_header:
+    db "P6", 10, "800 320", 10, "255", 10
+ppm_header_len equ $ - ppm_header
+
+on_pixel:  db 220, 60, 255
+off_pixel: db 10,  10, 18
+
+section .bss
+row_a:   resb W
+row_b:   resb W
+pixrow:  resb W*3
+
+section .text
+global _start
+
+; ----------------------------------------------------------------------------------------------------------------------------------------------------
+; write(STDOUT, buf, len)   buf in rsi, len in rdx
+; ----------------------------------------------------------------------------------------------------------------------------------------------------
+do_write:
+    mov rax, SYS_write
+    mov rdi, STDOUT
+    syscall
+    ret
+
+_start:
+    ; --- emit PPM header -------------------------------------------------
+--------------------------------------------------
+    lea rsi, [rel ppm_header]
+    mov rdx, ppm_header_len
+    call do_write
+
+    ; --- zero row_a, seed center cell ------------------------------------
+------------------------------------
+    lea rdi, [rel row_a]
+    xor eax, eax
+    mov ecx, W
+    rep stosb
+    mov byte [rel row_a + W/2], 1
+
+    xor r12d, r12d                  ; y = 0
+.next_row:
+    cmp r12d, H
+    jge .done
+
+    ; --- expand row_a into pixrow (RGB per cell) -------------------------
+-------------------------
+    xor ebx, ebx                    ; x = 0
+    lea r13, [rel row_a]
+    lea r14, [rel pixrow]
+    lea r15, [rel on_pixel]
+    lea rbp, [rel off_pixel]
+.expand:
+    movzx eax, byte [r13 + rbx]
+    test al, al
+    jz   .off
+    mov al, [r15]
+    mov [r14], al
+    mov al, [r15+1]
+    mov [r14+1], al
+    mov al, [r15+2]
+    mov [r14+2], al
+.off:
+    mov al, [rbp]
+    mov [r14], al
+    mov al, [rbp+1]
+    mov [r14+1], al
+    mov al, [rbp+2]
+    mov [r14+2], al
+.step:
+    add r14, 3
+    inc ebx
+    cmp ebx, W
+    jl  .expand
+
+    ; --- write pixrow ----------------------------------------------------
+----------------------------------------------------
+    lea rsi, [rel pixro
+pixrow]
+    mov rdx, W*3
+    call do_write
+
+    ; --- compute row_b from row_a (Rule 30) ------------------------------
+------------------------------
+    xor ebx, ebx                    ; x = 0
+    lea r13, [rel row_a]
+    lea r14, [rel row_b]
+    ; [TODO: implement Rule 30 update — new[x] = left XOR (center OR right)
+right)]
+    ; replace this comment with real NASM that fills row_b from row_a.
+
+    ; --- copy row_b → row_a (swap by copy; small W so this is fine) ------
+------
+    lea rsi, [rel row_b]
+    lea rdi, [rel row_a]
+    mov ecx, W
+    rep movsb
+
+    inc r12d
+    jmp .next_row
+
+.done:
+    mov rax, SYS_exit
+    xor edi, edi
+    syscall
+
+```
+
+⠙ ⠹ ⠸ ⠸ ⠼ ⠴ ⠧ ⠧ ⠏ ⠏ ⠋ ⠙ ⠹ ⠼ ⠼ ⠴ ⠧ ⠇ ⠏ ⠋ ⠙ ⠙ ⠹ ⠸ ⠴ ⠴ ⠦ ⠧ ⠇ ⠋ ⠙ ⠹ ⠹ ⠸ ⠼ ⠴ ⠧ ⠧ ⠇ ⠏ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ ⠋ ⠙ ⠹ ⠸ ⠼ 

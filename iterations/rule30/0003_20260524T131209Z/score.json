@@ -1,0 +1,12 @@
+{
+  "iter": 3,
+  "strategy": "scaffold",
+  "duration_s": 59.976865,
+  "fence_found": true,
+  "nasm_looking": true,
+  "assemble_ok": false,
+  "binary_size": 0,
+  "pixel_diff_pct": 100.0,
+  "pixels_off": 0,
+  "pixels_total": 0
+}

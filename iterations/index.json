@@ -1,0 +1,30 @@
+{
+  "targets": {
+    "rule30": [
+      {"iter": 1, "binary_size": 4096, "pixel_diff_pct": 100.0, "assemble_ok": false},
+      {"iter": 2, "binary_size": 0,    "pixel_diff_pct": 100.0, "assemble_ok": false},
+      {"iter": 3, "binary_size": 880,  "pixel_diff_pct": 73.2,  "assemble_ok": true},
+      {"iter": 4, "binary_size": 712,  "pixel_diff_pct": 41.0,  "assemble_ok": true},
+      {"iter": 5, "binary_size": 504,  "pixel_diff_pct": 12.4,  "assemble_ok": true},
+      {"iter": 6, "binary_size": 392,  "pixel_diff_pct": 2.1,   "assemble_ok": true},
+      {"iter": 7, "binary_size": 312,  "pixel_diff_pct": 0.0,   "assemble_ok": true},
+      {"iter": 8, "binary_size": 264,  "pixel_diff_pct": 0.0,   "assemble_ok": true}
+    ],
+    "mandel": [
+      {"iter": 1, "binary_size": 8192, "pixel_diff_pct": 100.0, "assemble_ok": false},
+      {"iter": 2, "binary_size": 2440, "pixel_diff_pct": 88.7,  "assemble_ok": true},
+      {"iter": 3, "binary_size": 1880, "pixel_diff_pct": 34.5,  "assemble_ok": true},
+      {"iter": 4, "binary_size": 1408, "pixel_diff_pct": 11.2,  "assemble_ok": true},
+      {"iter": 5, "binary_size": 1120, "pixel_diff_pct": 3.8,   "assemble_ok": true},
+      {"iter": 6, "binary_size": 1024, "pixel_diff_pct": 0.4,   "assemble_ok": true}
+    ],
+    "julia": [
+      {"iter": 1, "binary_size": 0,    "pixel_diff_pct": 100.0, "assemble_ok": false},
+      {"iter": 2, "binary_size": 3200, "pixel_diff_pct": 92.1,  "assemble_ok": true},
+      {"iter": 3, "binary_size": 2240, "pixel_diff_pct": 47.6,  "assemble_ok": true},
+      {"iter": 4, "binary_size": 1792, "pixel_diff_pct": 18.9,  "assemble_ok": true},
+      {"iter": 5, "binary_size": 1536, "pixel_diff_pct": 5.2,   "assemble_ok": true}
+    ]
+  },
+  "_note": "Placeholder. Filled in by harness/loop.py after the first agent run."
+}

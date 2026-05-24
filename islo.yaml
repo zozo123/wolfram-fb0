@@ -61,5 +61,6 @@ setup_script: |
 
   echo "=== wolfram-fb0 setup complete ==="
 
-# sources: (re-enable after `gh repo create zozo123/wolfram-fb0`)
-#   - url: github://zozo123/wolfram-fb0
+# When this sandbox is provisioned, islo clones the repo into /workspace/wolfram-fb0.
+sources:
+  - url: github://zozo123/wolfram-fb0

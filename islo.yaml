@@ -62,5 +62,7 @@ setup_script: |
   echo "=== wolfram-fb0 setup complete ==="
 
 # When this sandbox is provisioned, islo clones the repo into /workspace/wolfram-fb0.
+# Use plain https:// — the github:// scheme needs a git-remote-helper that isn't
+# in the islo-runner image, and a failed clone skips setup_script entirely.
 sources:
-  - url: github://zozo123/wolfram-fb0
+  - url: https://github.com/zozo123/wolfram-fb0

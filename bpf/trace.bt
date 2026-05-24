@@ -1,0 +1,51 @@
+// trace.bt — eBPF tracer for the wolfram-fb0 fractal binaries.
+//
+// What this does: attach to syscalls and key kprobes, emit a JSONL event
+// stream on stdout that the site's <pre id="bpf-stream"> live-renders.
+//
+// Why this needs a real VM (not a container): bpftrace compiles to BPF
+// bytecode loaded into the kernel, attaches kprobes to kernel functions like
+// __x64_sys_openat. Containers don't expose the kernel that way.
+//
+// Run inside the sandbox:
+//   sudo bpftrace bpf/trace.bt -o jsonl > /tmp/wolfram-bpf.jsonl
+// The harness exposes /tmp/wolfram-bpf.jsonl on the share port.
+
+BEGIN {
+    printf("{\"event\":\"start\",\"msg\":\"wolfram-fb0 trace armed\"}\n");
+}
+
+// Catch open() of the framebuffer specifically — this is the moment the AI's
+// asm binary first touches the kernel-side fb device.
+tracepoint:syscalls:sys_enter_openat
+/ str(args->filename) == "/dev/fb0" /
+{
+    printf("{\"event\":\"open\",\"pid\":%d,\"comm\":\"%s\",\"path\":\"/dev/fb0\"}\n",
+           pid, comm);
+}
+
+// Every mmap from our binary — this is where pixels start flowing.
+tracepoint:syscalls:sys_enter_mmap
+/ comm == "rule30.elf" || comm == "mandel.elf" || comm == "julia.elf" /
+{
+    printf("{\"event\":\"mmap\",\"pid\":%d,\"comm\":\"%s\",\"len\":%d,\"prot\":%d}\n",
+           pid, comm, args->len, args->prot);
+}
+
+// Count writes to /dev/fb0 (pixel updates) — the firehose; aggregate.
+tracepoint:syscalls:sys_enter_write
+/ comm == "rule30.elf" || comm == "mandel.elf" || comm == "julia.elf" /
+{
+    @writes[comm] = count();
+    @bytes[comm] = sum(args->count);
+}
+
+interval:s:1 {
+    printf("{\"event\":\"tick\",\"writes\":\"%d\"}\n", elapsed / 1000000000);
+}
+
+END {
+    print(@writes);
+    print(@bytes);
+    printf("{\"event\":\"end\"}\n");
+}

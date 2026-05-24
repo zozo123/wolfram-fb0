@@ -1,0 +1,48 @@
+# wolfram-fb0 sandbox — a real Linux VM with the full asm/eBPF/qemu toolchain pre-warmed.
+# See README for the "why a real VM, not a container" angle.
+
+sandbox: wolfram-fb0
+
+# Base image: a recent Debian/Ubuntu with kernel headers exposed.
+# (The agent loop + qemu live entirely inside this VM; the host is just a launcher.)
+image: ubuntu:24.04
+
+user: islo
+workdir: /workspace/wolfram-fb0
+
+# Sized for: nested qemu boot (needs RAM), bpftrace JIT (needs CPU),
+# and a small Gemma sitting in RAM for the agent loop.
+cpu: 4
+memory_mb: 8192
+disk_gb: 20
+
+env:
+  # Asm + qemu output paths the Makefile expects.
+  WOLFRAM_DIST: /workspace/wolfram-fb0/dist
+  WOLFRAM_ITER: /workspace/wolfram-fb0/iterations
+  # The agent loop reads this; default is smallest open-weight Gemma available.
+  WOLFRAM_MODEL: gemma3:1b
+  # Where qemu writes the framebuffer that the site's <canvas> ws-streams.
+  WOLFRAM_FB_BRIDGE_PORT: "8910"
+  # Where bpftrace writes the trace JSONL the site renders.
+  WOLFRAM_BPF_BRIDGE_PORT: "8911"
+
+setup_scripts:
+  # Assembler + linker + base build deps
+  - apt-get update && apt-get install -y --no-install-recommends nasm binutils build-essential
+  # qemu for the inner-VM fractal boot
+  - apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils
+  # eBPF tracing — needs the real kernel, which is exactly why this is a VM not a container
+  - apt-get install -y --no-install-recommends bpftrace linux-headers-generic
+  # Python for the oracle (reference renderer + pixel-diff scorer)
+  - apt-get install -y --no-install-recommends python3 python3-pip python3-numpy python3-pillow
+  # Local model runtime + smallest Gemma
+  - curl -fsSL https://ollama.com/install.sh | sh
+  - ollama pull "$WOLFRAM_MODEL" || true
+  # Inner-loop coding agent
+  - curl -fsSL https://opencode.ai/install | bash
+
+# When this repo is cloned into the sandbox, islo will check it out here.
+# (Disabled for now — repo not pushed yet. Re-enable after `gh repo create`.)
+# sources:
+#   - github://zozo123/wolfram-fb0

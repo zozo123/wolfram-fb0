@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>wolfram-fb0 — AI writes x86_64 asm + eBPF for fractals, in a real VM in your browser</title>
+  <meta name="description" content="An AI agent loop writes pure x86_64 assembly and eBPF for Wolfram cellular automata + Mandelbrot, rendered direct to /dev/fb0. Entire build runs in an islo sandbox VM. No install. Fork-and-rerun in one click." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="hero">
+  <h1>wolfram-fb0</h1>
+  <p class="tag">AI writes x86_64 assembly + eBPF for Wolfram fractals direct to <code>/dev/fb0</code>.<br/>
+  The entire build — agent loop, qemu boot, kernel trace — runs in a <strong>real Linux VM in your browser</strong> via <a href="https://islo.dev">islo</a>. No install. Fork-and-rerun in one click.</p>
+
+  <div class="cta-row">
+    <a class="cta primary" href="#fork" id="fork">Fork the sandbox →</a>
+    <a class="cta ghost" href="https://github.com/zozo123/wolfram-fb0">Code on GitHub</a>
+    <a class="cta ghost" href="#how">How it works</a>
+  </div>
+
+  <canvas id="rule30" width="800" height="320" aria-label="Live Rule 30 rendering, byte-for-byte equivalent to the asm version"></canvas>
+  <p class="caption">↑ Rule 30, rendered in your browser by the exact same algorithm the asm version uses on the framebuffer.</p>
+</header>
+
+<section id="container-vs-vm">
+  <h2>Why this needs a real VM, not a container</h2>
+  <p>Most AI coding sandboxes are containers. Containers can't:</p>
+  <ul>
+    <li>Run <code>bpftrace</code> against kprobes — needs real kernel access.</li>
+    <li>Open <code>/dev/fb0</code> — there's no framebuffer device in a container.</li>
+    <li>Boot a nested <code>qemu-system-x86_64</code> on real virtualization — needs KVM.</li>
+  </ul>
+  <p>islo gives you a <em>real virtualized VM in your browser</em>, with a real kernel, real <code>/dev/fb0</code>, and real eBPF. Which means an AI agent can write code that talks to the kernel for real — and you can watch it happen from a tab.</p>
+</section>
+
+<section id="how">
+  <h2>The build, in five acts</h2>
+  <ol class="acts">
+    <li><strong>Provision</strong> — <code>islo use wolfram-fb0</code> spins a real Linux VM with <code>nasm</code>, <code>qemu</code>, <code>bpftrace</code>, Ollama (+ the smallest Gemma), and <a href="https://github.com/sst/opencode">opencode</a> pre-warmed. ~30s to a working shell.</li>
+    <li><strong>Code</strong> — Inside the sandbox, islo skills (plan → build → review → refine) drive opencode with a local Gemma to write pure x86_64 assembly for Rule 30, Mandelbrot, and Julia. No libc, single ELF, talks to <code>/dev/fb0</code> directly.</li>
+    <li><strong>Judge</strong> — An oracle in the same sandbox assembles each iteration, runs it in <code>--ppm</code> mode, pixel-diffs against a Python reference, and reports binary size. The agent optimizes both.</li>
+    <li><strong>Boot</strong> — <code>qemu-system-x86_64</code> boots a 4 MB Linux straight into the agent-built ELF on a real framebuffer. AI-written <code>bpftrace</code> programs attach to the binary and stream every syscall + every byte mmapped to fb0.</li>
+    <li><strong>Share</strong> — <code>islo share</code> exposes the framebuffer stream + the eBPF event stream as public URLs. You see the fractal bloom in real time, with the kernel-side trace scrolling beside it.</li>
+  </ol>
+</section>
+
+<section id="live">
+  <h2>Live from the sandbox</h2>
+  <div class="live-grid">
+    <div class="live-pane">
+      <h3>Framebuffer</h3>
+      <div id="fb-stream" class="placeholder">Stream connects after a sandbox is forked.</div>
+    </div>
+    <div class="live-pane">
+      <h3>eBPF trace</h3>
+      <pre id="bpf-stream" class="placeholder">[trace] waiting for a forked sandbox…</pre>
+    </div>
+  </div>
+</section>
+
+<section id="convergence">
+  <h2>Convergence</h2>
+  <p>Binary size and pixel-diff vs iteration, by target. Filled in after the first full agent run.</p>
+  <div id="convergence-chart" class="placeholder">chart will render here</div>
+</section>
+
+<section id="provenance">
+  <h2>Lineage</h2>
+  <p><a href="https://www.fractint.org/">Fractint</a> (1988) · <a href="https://github.com/mrmcsoftware/FractalAsm">FractalAsm</a> · <a href="https://www.wolframscience.com/nks/">A New Kind of Science</a> · <a href="https://islo.dev">islo</a> · <a href="https://github.com/sst/opencode">opencode</a></p>
+</section>
+
+<footer>
+  <p>MIT licensed. <a href="https://github.com/zozo123/wolfram-fb0">Source</a>. By <a href="https://github.com/zozo123">zozo123</a>.</p>
+</footer>
+
+<script src="rule30.js" defer></script>
+</body>
+</html>

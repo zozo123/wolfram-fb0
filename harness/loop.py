@@ -60,16 +60,17 @@ def call_opencode(prompt: str, model: str, workdir: Path) -> str:
 
 
 def extract_asm(reply: str) -> str | None:
-    """Pull the first ```nasm ... ``` (or ```asm) fenced block from the reply."""
-    for fence in ("```nasm", "```asm", "```"):
-        i = reply.find(fence)
-        if i < 0:
-            continue
-        start = reply.find("\n", i) + 1
-        end = reply.find("```", start)
-        if end > start:
-            return reply[start:end].strip() + "\n"
-    return None
+    """Pull the LAST fenced code block from the reply. Picks the last block
+    because reasoning-style models often emit draft blocks mid-thought then the
+    real answer at the end. Accepts any language tag (nasm, asm, assembly,
+    x86asm, none). The oracle will reject anything that isn't valid NASM."""
+    import re
+    fence = chr(96) * 3
+    pat = re.compile(re.escape(fence) + r"[a-zA-Z0-9_+\-]*\s*\n(.*?)" + re.escape(fence), re.S)
+    matches = pat.findall(reply)
+    if not matches:
+        return None
+    return matches[-1].strip() + "\n"
 
 
 def snapshot_iteration(target: str, n: int, asm: str, sc: oracle.Score, reply: str) -> Path:

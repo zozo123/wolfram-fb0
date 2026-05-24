@@ -1,48 +1,65 @@
-# wolfram-fb0 sandbox — a real Linux VM with the full asm/eBPF/qemu toolchain pre-warmed.
-# See README for the "why a real VM, not a container" angle.
+# wolfram-fb0 sandbox — a real Linux VM with the asm/eBPF/qemu toolchain
+# pre-warmed. See README for the "real VM, not a container" framing.
+#
+# What's baked into the sandbox image:
+#   - apt: nasm, ld, qemu-system-x86, bpftrace, python3 + numpy/pillow, build-essential
+#   - Homebrew (linuxbrew) for clean userland tool installs going forward
+#   - ollama + smallest Gemma (downloaded on first setup, persists via snapshot)
+#   - opencode (the inner-loop coding agent)
 
 sandbox: wolfram-fb0
 
-# Base image: a recent Debian/Ubuntu with kernel headers exposed.
-# (The agent loop + qemu live entirely inside this VM; the host is just a launcher.)
-image: ubuntu:24.04
-
-user: islo
-workdir: /workspace/wolfram-fb0
-
-# Sized for: nested qemu boot (needs RAM), bpftrace JIT (needs CPU),
-# and a small Gemma sitting in RAM for the agent loop.
 cpu: 4
-memory_mb: 8192
-disk_gb: 20
+memory_mb: 16384   # gemma4 needs ~9.8 GiB; system overhead eats another ~700 MiB. 16 GiB is safe.
+disk_gb: 40        # 9.6 GiB model + apt + brew + qemu kernel build → headroom.
 
 env:
-  # Asm + qemu output paths the Makefile expects.
   WOLFRAM_DIST: /workspace/wolfram-fb0/dist
   WOLFRAM_ITER: /workspace/wolfram-fb0/iterations
-  # The agent loop reads this; default is smallest open-weight Gemma available.
-  WOLFRAM_MODEL: gemma3:1b
-  # Where qemu writes the framebuffer that the site's <canvas> ws-streams.
+  WOLFRAM_MODEL: gemma4:e2b   # smallest gemma4 in ollama registry (7.2 GB on disk)
   WOLFRAM_FB_BRIDGE_PORT: "8910"
-  # Where bpftrace writes the trace JSONL the site renders.
   WOLFRAM_BPF_BRIDGE_PORT: "8911"
+  # Homebrew on Linux defaults to this prefix.
+  HOMEBREW_PREFIX: /home/linuxbrew/.linuxbrew
 
-setup_scripts:
-  # Assembler + linker + base build deps
-  - apt-get update && apt-get install -y --no-install-recommends nasm binutils build-essential
-  # qemu for the inner-VM fractal boot
-  - apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils
-  # eBPF tracing — needs the real kernel, which is exactly why this is a VM not a container
-  - apt-get install -y --no-install-recommends bpftrace linux-headers-generic
-  # Python for the oracle (reference renderer + pixel-diff scorer)
-  - apt-get install -y --no-install-recommends python3 python3-pip python3-numpy python3-pillow
-  # Local model runtime + smallest Gemma
-  - curl -fsSL https://ollama.com/install.sh | sh
-  - ollama pull "$WOLFRAM_MODEL" || true
-  # Inner-loop coding agent
-  - curl -fsSL https://opencode.ai/install | bash
+setup_script: |
+  set -e
+  echo "=== wolfram-fb0 setup begin ==="
+  export DEBIAN_FRONTEND=noninteractive
 
-# When this repo is cloned into the sandbox, islo will check it out here.
-# (Disabled for now — repo not pushed yet. Re-enable after `gh repo create`.)
-# sources:
-#   - github://zozo123/wolfram-fb0
+  # ── apt: build prereqs + the system toolchain we own end-to-end ────────
+  sudo apt-get update
+  sudo apt-get install -y --no-install-recommends \
+      build-essential procps curl file git ca-certificates \
+      nasm binutils \
+      qemu-system-x86 qemu-utils \
+      bpftrace \
+      python3 python3-pip python3-numpy python3-pillow \
+      cpio gzip xz-utils zstd
+
+  # ── Homebrew (linuxbrew) — clean userland for any tools we add later ──
+  if ! command -v brew >/dev/null 2>&1; then
+    NONINTERACTIVE=1 /bin/bash -c \
+      "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  if ! grep -q 'linuxbrew/.linuxbrew/bin/brew shellenv' ~/.bashrc 2>/dev/null; then
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+  fi
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 2>/dev/null || true
+
+  # ── Ollama: local model runtime (needs zstd, which we apt-installed) ──
+  if ! command -v ollama >/dev/null 2>&1; then
+    curl -fsSL https://ollama.com/install.sh | sudo sh
+  fi
+  (nohup ollama serve > /tmp/ollama.log 2>&1 &) ; sleep 3
+  ollama pull "$WOLFRAM_MODEL" || true
+
+  # ── Opencode: inner-loop coding agent ─────────────────────────────────
+  if ! command -v opencode >/dev/null 2>&1; then
+    curl -fsSL https://opencode.ai/install | bash || true
+  fi
+
+  echo "=== wolfram-fb0 setup complete ==="
+
+# sources: (re-enable after `gh repo create zozo123/wolfram-fb0`)
+#   - url: github://zozo123/wolfram-fb0

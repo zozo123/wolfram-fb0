@@ -116,7 +116,7 @@ def run_target(target: str, model: str, max_iters: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default=os.environ.get("WOLFRAM_MODEL", "gemma3:1b"))
+    ap.add_argument("--model", default=os.environ.get("WOLFRAM_MODEL", "gemma4:e2b"))
     ap.add_argument("--targets", default="rule30,mandel,julia")
     ap.add_argument("--max-iters", type=int, default=40)
     args = ap.parse_args()

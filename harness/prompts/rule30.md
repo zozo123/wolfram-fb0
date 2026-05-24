@@ -1,26 +1,18 @@
-# Task: x86_64 assembly — Wolfram Rule 30 → PPM stdout
+# Task: x86_64 NASM — Wolfram Rule 30 → PPM stdout
 
-Write a complete `src/rule30.s` (NASM, x86_64 Linux) that:
+Write `src/rule30.s` (NASM, x86_64 Linux), no libc.
 
-- Outputs an 800×320 P6 PPM image on stdout.
-- Matches `oracle/reference.py:rule30()` **byte-for-byte** after the PPM header.
-- Implements Wolfram **Rule 30**: `new = left XOR (center OR right)`.
-- Seeds the first row with a single `1` at column 400 (`W/2`).
-- Wraps at the row edges (toroidal: `row[-1] ≡ row[W-1]`, `row[W] ≡ row[0]`).
-- Uses **no libc** — only `sys_write(1)` and `sys_exit(0)` via the `syscall` instruction.
-- Uses palette: ON cells `RGB(220, 60, 255)`, OFF cells `RGB(10, 10, 18)`.
+**Output:** binary PPM (`P6\n800 320\n255\n` then RGB bytes) on stdout. 800×320.
 
-Build expectation:
-```
-nasm -felf64 src/rule30.s -o /tmp/rule30.o
-ld -o /tmp/rule30.elf /tmp/rule30.o
-./tmp/rule30.elf --ppm > /tmp/out.ppm
-```
+**Algorithm:**
+1. Row buffer = 800 bytes, all zero except `row[400] = 1`.
+2. For each of 320 rows: emit the row as RGB pixels (ON cell = `220,60,255`; OFF cell = `10,10,18`), then update the row.
+3. Update rule: `new[x] = row[(x-1) mod 800] XOR (row[x] OR row[(x+1) mod 800])`.
 
-The oracle then pixel-diffs `/tmp/out.ppm` against `oracle/reference.py:rule30()`.
+**Syscalls:** `write(fd=1, buf, len)` is `rax=1, rdi=1, rsi=buf, rdx=len, syscall`. `exit(0)` is `rax=60, rdi=0, syscall`.
 
-**Constraints you are optimizing:**
-- `pixel_diff_pct` must reach `0.00`.
-- After that, minimize `binary_size` (in bytes of the linked ELF).
+**Constraints:**
+- One file. `section .text` with `global _start`, plus `.bss` / `.rodata` as needed.
+- Pixel-perfect match required. Minimize binary size after that.
 
-Reply with **only** the complete contents of `src/rule30.s` inside a single ` ```nasm ` fenced block. Do not include any other text outside the code fence.
+Reply with ONLY the complete `src/rule30.s` inside a triple-backtick code fence. No commentary.

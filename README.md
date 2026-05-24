@@ -72,6 +72,14 @@ After the agent loop finishes, this section will embed the charts: binary size d
 * **[islo](https://islo.dev)** — the real-VM sandbox that makes the whole thing one click.
 * **[opencode](https://github.com/sst/opencode)** — the inner-loop coding agent.
 
+## Try islo
+
+Every new account on **[islo.dev](https://www.islo.dev)** ships with **$50 of free credit, no card required** — enough to spin a real-VM sandbox like the one this demo runs in and reproduce the full convergence loop yourself.
+
+## About
+
+Built by **[Yossi Eliaz](https://www.linkedin.com/in/yossi-eliaz)** ([@zozo123](https://github.com/zozo123)) for [islo.dev](https://www.islo.dev).
+
 ## License
 
 MIT. Fork freely.

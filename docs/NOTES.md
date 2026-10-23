@@ -8,7 +8,7 @@ Repo: [github.com/zozo123/wolfram-fb0](https://github.com/zozo123/wolfram-fb0) �
 
 ## What this is not
 
-- **Not a finished demo with a converged Rule 30.** `iterations/index.json` reflects **three real iterations of `gemma3:1b` in an islo sandbox** (2026-05-24, ~13:11 UTC). Iterations 1–2 produce valid NASM that assembles (8,872-byte ELF), but the model echoes the few-shot example and writes only the 3-byte `P6\n` header, so the pixel diff stays at 100%. Iteration 3 (scaffold-fill, 60 s budget) returns the scaffold with the `[TODO]` unfilled and does not assemble. The iteration record is the result, not a polished screenshot.
+- **Not a finished demo with a converged Rule 30.** `iterations/index.json` reflects **three real iterations of `gemma3:1b` in an islo sandbox** (2026-05-24, ~13:11 UTC). Iterations 1–2 produce valid NASM that assembles (8,872-byte ELF), but the model echoes the few-shot example and writes only 3 bytes of output, so the pixel diff stays at 100%. Iteration 3 (scaffold-fill, 60 s budget) returns the scaffold with the `[TODO]` unfilled and does not assemble. The iteration record is the result, not a polished screenshot.
 - **Not a frontier-model demo.** The model is a 1B local Gemma running on Ollama inside the sandbox. That is deliberate: the point is to find the capability cliff, not to have a frontier model one-shot the problem.
 - **Not a single-shot codegen.** It is an oracle loop. `harness/runner.py` escalates the prompt strategy on a fixed schedule (few-shot → scaffold-fill), scores every attempt, and snapshots every iteration to disk. Feeding the previous score back into the next prompt is designed (`harness/loop.py`) but not yet run.
 - **Not a container.** It runs in a VM with its own kernel. The three most interesting parts of the planned pipeline (nested qemu, eBPF, `/dev/fb0`) do not run in a typical container.
@@ -108,7 +108,7 @@ Iteration 1 (few-shot, 10.5 s) → 8,872-byte ELF, `assemble_ok=true`, pixel dif
 
 | | |
 | --- | --- |
-| Best agent-built `assemble_ok=true` ELF | **8,872 B** (iterations 1–2, few-shot — the model echoes the example and writes only the PPM magic `P6\n`) |
+| Best agent-built `assemble_ok=true` ELF | **8,872 B** (iterations 1–2, few-shot — the model echoes the example and writes only 3 bytes of output) |
 | Pixel-perfect Rule 30 from the agent | **not yet** — pixel diff stays at 100% across iterations 1–3 |
 | Strategies attempted | `fewshot` (×2), `scaffold` (×1) |
 | `ollama run` wall-clock | **10.2–10.5 s** for `fewshot`, **60 s** (budget exhausted) for `scaffold` |

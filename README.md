@@ -62,7 +62,7 @@ Running it on your own Linux machine needs `nasm`, `ld`, `qemu-system-x86_64`, `
 
 ## Status
 
-* **Rule 30:** 3 real iterations of `gemma3:1b` via `harness/runner.py` on 24 May 2026 ([`iterations/rule30/`](iterations/rule30/), chart on [the page](https://zozo123.github.io/wolfram-fb0/#convergence)). Iterations 1–2 (few-shot prompt) assembled to an 8,872-byte ELF but echoed the prompt's example and wrote only a 3-byte `P6\n` header, so the pixel diff stayed at 100%. Iteration 3 (scaffold-fill prompt) returned the scaffold with the TODO unfilled and did not assemble.
+* **Rule 30:** 3 real iterations of `gemma3:1b` via `harness/runner.py` on 24 May 2026 ([`iterations/rule30/`](iterations/rule30/), chart on [the page](https://zozo123.github.io/wolfram-fb0/#convergence)). Iterations 1–2 (few-shot prompt) assembled to an 8,872-byte ELF but echoed the prompt's example and wrote only 3 bytes of output, so the pixel diff stayed at 100%. Iteration 3 (scaffold-fill prompt) returned the scaffold with the TODO unfilled and did not assemble.
 * **Mandelbrot, Julia:** not attempted. `src/mandel.s` and `src/julia.s` are `exit(1)` stubs.
 * `src/rule30.s` is a placeholder that includes the hand-written `src/rule30_reference.s`.
 * The qemu boot, the bpftrace run and the browser stream bridges are written but have not been run end to end.

@@ -20,7 +20,7 @@ help:
 	@echo "  make build-julia   Assemble src/julia.s  → dist/julia.elf."
 	@echo "  make qemu-boot     Boot dist/*.elf in qemu with a real framebuffer."
 	@echo "  make bpf-trace     Attach bpf/trace.bt to the next-running fractal binary."
-	@echo "  make site          Build the static GitHub Pages site under site/_site/."
+	@echo "  make site          Explain how the GitHub Pages site is served (no build step)."
 	@echo "  make clean         Remove dist/ artifacts and qemu build."
 
 demo: build-rule30 build-mandel build-julia
@@ -54,7 +54,9 @@ bpf-trace:
 	bpftrace bpf/trace.bt
 
 site:
-	@bash site/build.sh
+	@echo "No build step: GitHub Pages serves the repo root on main as-is"
+	@echo "(index.html, *.js, style.css, iterations/index.json)."
+	@echo "Preview locally: python3 -m http.server, then open http://localhost:8000/"
 
 clean:
-	rm -rf "$(WOLFRAM_DIST)" qemu/build qemu/initramfs.cpio.gz qemu/bzImage site/_site
+	rm -rf "$(WOLFRAM_DIST)" qemu/build qemu/initramfs.cpio.gz qemu/bzImage

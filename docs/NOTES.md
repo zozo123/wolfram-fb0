@@ -29,7 +29,7 @@ Three targets, all x86_64 NASM, all `_start`-only, no libc:
 - **Mandelbrot** — 800×320, SSE2 float, 64 iterations, escape radius² ≥ 4.0, cosine palette.
 - **Julia animation** — same SSE2 core; parameter `c` traces a circle in frame number. The harness would concatenate frames for the framebuffer demo.
 
-Each agent-built binary should make exactly two syscalls: `write(1, …)` and `exit_group(60)`. The oracle pixel-diffs the output against a Python reference renderer in `oracle/reference.py` and returns `(assemble_ok, binary_size, pixel_diff_pct)`.
+Each agent-built binary should make exactly two syscalls: `write(1, …)` and `exit` (syscall 60). The oracle pixel-diffs the output against a Python reference renderer in `oracle/reference.py` and returns `(assemble_ok, binary_size, pixel_diff_pct)`.
 
 Planned, not yet run: `bpf/trace.bt` is a `bpftrace` program that traces the binary's `openat`, `mmap` and `write` syscalls at runtime and emits JSONL. `qemu/boot.sh` builds a small initramfs containing the final ELF plus a minimal busybox, then nested-boots it with `qemu-system-x86_64 -vga std`. The framebuffer and the trace would be bridged out over WebSocket (`harness/bridge_fb.py`, `harness/bridge_bpf.py`) into the panes on the Pages site. The `islo.yaml` manifest declares the toolchain.
 

@@ -8,7 +8,7 @@
 ; H rows emit RGB pixels for the current automaton row, then update the row
 ; with the Rule 30 transition (new = left XOR (center OR right)).
 ;
-; No libc. Two syscalls only: write(1) and exit_group(60).
+; No libc. Two syscalls only: write(1) and exit (syscall 60).
 
 BITS 64
 

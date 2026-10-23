@@ -1,5 +1,7 @@
 # Architecture
 
+This is the intended design. So far only the Rule 30 assemble, run and pixel-diff loop has run (via `harness/runner.py`, which calls `ollama run` directly); the opencode driver, qemu boot, bpftrace and browser streams have not. Status: [NOTES.md](NOTES.md).
+
 ```
                          ┌──────────────────────────────────────────────┐
                          │            islo sandbox VM (real VM)          │
@@ -60,7 +62,7 @@
 | **`./fractal.elf --fb /dev/fb0`** | ✗ VM only | No `/dev/fb0` in containers — no framebuffer device. |
 | **`bpftrace`** | ✗ VM only | Needs kernel kprobes + BPF JIT in a real kernel; containers share host kernel and rarely expose this. |
 
-Conclusion: the three rows that make this demo visually and technically interesting *all* require a real VM. The pitch — "a real-VM AI sandbox in the browser" — earns its keep precisely here.
+Conclusion: the three rows that make this demo visually and technically interesting *all* require a real VM.
 
 ## Repo layout
 
@@ -70,10 +72,10 @@ Conclusion: the three rows that make this demo visually and technically interest
 | `bpf/` | `trace.bt` — eBPF X-ray of running fractal binary |
 | `oracle/` | Python reference renderer, pixel-diff + binary-size scorer |
 | `harness/` | `loop.py` (agent driver) + `prompts/*.md` (per-target specs) |
-| `dist/` | Linked ELFs (gitignored except final pinned ones) |
+| `dist/` | Linked ELFs (gitignored; not created yet) |
 | `iterations/` | One subdir per agent iteration, with asm + score + transcript |
 | `qemu/` | `boot.sh` + microvm builder for the framebuffer demo |
-| `site/` | GitHub Pages: plot, live-stream panes, convergence chart |
+| `index.html`, `*.js`, `style.css` | GitHub Pages: Rule 30 preview, stream panes, convergence chart |
 | `islo.yaml` | Sandbox manifest — image, cpu, mem, setup scripts |
 | `Makefile` | All targets are invoked as `islo use wolfram-fb0 -- make <target>` |
 
@@ -90,10 +92,12 @@ read src/<t>.s + last score
 → else: feed score back as next prompt context
 ```
 
-## What "fork the sandbox" means in practice
+## Planned: re-provisioning the sandbox
 
-1. Visitor clicks the share link on the Pages site.
-2. islo provisions a new VM **from the warmed snapshot** — toolchain + model cached, ~5 s to ready.
+Not built yet; snapshot boot has not been timed.
+
+1. A visitor follows a share link from the Pages site.
+2. islo provisions a new VM **from the warmed snapshot**, with the toolchain and model cached.
 3. The visitor's VM gets a fresh clone of `wolfram-fb0` at HEAD.
 4. They edit `harness/config` (model, max iters, prompts) and run `make agent-loop`.
 5. Their convergence curve gets contributed back via `iterations/`-shaped PR (optional).

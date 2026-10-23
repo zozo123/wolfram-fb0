@@ -39,7 +39,8 @@
     const M = { t: 20, r: 56, b: 36, l: 56 };
     const innerW = W - M.l - M.r, innerH = H - M.t - M.b;
 
-    const targets = Object.keys(data.targets || {});
+    // Only plot targets that have real iterations; empty arrays mean "not attempted".
+    const targets = Object.keys(data.targets || {}).filter((t) => (data.targets[t] || []).length);
     if (!targets.length) { mount.textContent = "no iterations yet."; return; }
 
     // Domains.

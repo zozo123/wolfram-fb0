@@ -1,91 +1,129 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>wolfram-fb0 — AI writes x86_64 asm + eBPF for fractals, in a real VM in your browser</title>
-  <meta name="description" content="An AI agent loop writes pure x86_64 assembly and eBPF for Wolfram cellular automata + Mandelbrot, rendered direct to /dev/fb0. Entire build runs in an islo sandbox VM. No install. Fork-and-rerun in one click." />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>wolfram-fb0: small-LLM x86 asm experiment | Yossi Eliaz</title>
+  <meta name="description" content="Experiment by Yossi Eliaz: a 1B local model in an oracle loop tries to write x86_64 NASM for Rule 30 inside an islo VM. First 3 iterations did not converge.">
+  <link rel="canonical" href="https://zozo123.github.io/wolfram-fb0/">
+  <meta name="author" content="Yossi Eliaz">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yossi Eliaz">
+  <meta property="og:title" content="wolfram-fb0: small-LLM x86 asm experiment">
+  <meta property="og:description" content="Can a 1B local model (gemma3:1b) write x86_64 NASM for Wolfram's Rule 30? An oracle loop in an islo.dev VM. First 3 iterations: not yet.">
+  <meta property="og:url" content="https://zozo123.github.io/wolfram-fb0/">
+  <meta property="og:image" content="https://zozo123.github.io/wolfram-fb0/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="wolfram-fb0: can a 1B model write x86 asm? A Rule 30 pattern, by Yossi Eliaz.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="wolfram-fb0: small-LLM x86 asm experiment">
+  <meta name="twitter:description" content="Can a 1B local model (gemma3:1b) write x86_64 NASM for Wolfram's Rule 30? First 3 iterations: not yet.">
+  <meta name="twitter:image" content="https://zozo123.github.io/wolfram-fb0/og.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "wolfram-fb0",
+    "description": "Experiment: an oracle loop asks a 1B local model to write x86_64 NASM for Rule 30 inside an islo.dev VM. The first 3 iterations did not produce a correct image.",
+    "codeRepository": "https://github.com/zozo123/wolfram-fb0",
+    "url": "https://zozo123.github.io/wolfram-fb0/",
+    "image": "https://zozo123.github.io/wolfram-fb0/og.png",
+    "license": "https://opensource.org/licenses/MIT",
+    "programmingLanguage": ["Assembly", "Python", "JavaScript"],
+    "dateCreated": "2026-05-24",
+    "dateModified": "2026-10-22",
+    "author": {
+      "@type": "Person",
+      "name": "Yossi Eliaz",
+      "url": "https://yossieliaz.netlify.app/",
+      "sameAs": ["https://github.com/zozo123", "https://www.linkedin.com/in/yossi-eliaz/"]
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
 <header class="hero">
   <h1>wolfram-fb0</h1>
-  <p class="tag">AI writes x86_64 assembly + eBPF for Wolfram fractals direct to <code>/dev/fb0</code>.<br/>
-  The entire build — agent loop, qemu boot, kernel trace — runs in a <strong>real Linux VM in your browser</strong> via <a href="https://islo.dev">islo</a>. No install. Fork-and-rerun in one click.</p>
+  <p class="byline">By <a href="https://zozo123.github.io/">Yossi Eliaz</a> · experiment · May 2026</p>
+  <p class="tag">An experiment: an oracle loop asks a 1B local model (<code>gemma3:1b</code> via Ollama) to write pure x86_64 NASM that renders Rule 30, then pixel-diffs it against a Python reference, all inside an <a href="https://islo.dev">islo.dev</a> VM. The first 3 iterations (24 May 2026) did not produce a correct image. The animation below is drawn by JavaScript from the reference algorithm.</p>
 
   <div class="cta-row">
-    <a class="cta primary" href="#fork" id="fork">Fork the sandbox →</a>
+    <a class="cta primary" href="#run">How to run it</a>
     <a class="cta ghost" href="https://github.com/zozo123/wolfram-fb0">Code on GitHub</a>
     <a class="cta ghost" href="#how">How it works</a>
   </div>
 
-  <canvas id="rule30" width="800" height="320" aria-label="Live Rule 30 rendering, byte-for-byte equivalent to the asm version"></canvas>
-  <p class="caption">↑ Rule 30, rendered live in your browser by the same algorithm as <code>src/rule30_reference.s</code> — the agent's target.</p>
+  <canvas id="rule30" width="800" height="320" role="img" aria-label="Rule 30 animation drawn by JavaScript from the reference algorithm, not model output"></canvas>
+  <p class="caption">↑ Rule 30, drawn in your browser by JavaScript using the same algorithm as <code>src/rule30_reference.s</code>, the hand-written target the model is asked to match. This is not model output.</p>
 </header>
 
 <section id="container-vs-vm">
-  <h2>Why this needs a real VM, not a container</h2>
-  <p>Most AI coding sandboxes are containers. Containers can't:</p>
+  <h2>Why a VM, not a container</h2>
+  <p>Most AI coding sandboxes are containers. The full design needs three things containers usually can't give you:</p>
   <ul>
     <li>Run <code>bpftrace</code> against kprobes — needs real kernel access.</li>
     <li>Open <code>/dev/fb0</code> — there's no framebuffer device in a container.</li>
     <li>Boot a nested <code>qemu-system-x86_64</code> on real virtualization — needs KVM.</li>
   </ul>
-  <p>islo gives you a <em>real virtualized VM in your browser</em>, with a real kernel, real <code>/dev/fb0</code>, and real eBPF. Which means an AI agent can write code that talks to the kernel for real — and you can watch it happen from a tab.</p>
+  <p>That is why the experiment runs in an islo.dev VM, which has its own kernel. So far only the assemble, run and pixel-diff loop has run there; the framebuffer and eBPF steps are planned.</p>
 </section>
 
 <section id="how">
   <h2>The build, in five acts</h2>
   <ol class="acts">
-    <li><strong>Provision</strong> — <code>islo use wolfram-fb0</code> spins a real Linux VM with <code>nasm</code>, <code>qemu</code>, <code>bpftrace</code>, Ollama (+ the smallest Gemma), and <a href="https://github.com/sst/opencode">opencode</a> pre-warmed. ~30s to a working shell.</li>
-    <li><strong>Code</strong> — Inside the sandbox, islo skills (plan → build → review → refine) drive opencode with a local Gemma to write pure x86_64 assembly for Rule 30, Mandelbrot, and Julia. No libc, single ELF, talks to <code>/dev/fb0</code> directly.</li>
-    <li><strong>Judge</strong> — An oracle in the same sandbox assembles each iteration, runs it in <code>--ppm</code> mode, pixel-diffs against a Python reference, and reports binary size. The agent optimizes both.</li>
-    <li><strong>Boot</strong> — <code>qemu-system-x86_64</code> boots a 4 MB Linux straight into the agent-built ELF on a real framebuffer. AI-written <code>bpftrace</code> programs attach to the binary and stream every syscall + every byte mmapped to fb0.</li>
-    <li><strong>Share</strong> — <code>islo share</code> exposes the framebuffer stream + the eBPF event stream as public URLs. You see the fractal bloom in real time, with the kernel-side trace scrolling beside it.</li>
+    <li><strong>Provision</strong> — <code>islo use wolfram-fb0</code> provisions the Linux VM described in <code>islo.yaml</code>: <code>nasm</code>, <code>qemu</code>, <code>bpftrace</code>, Ollama with <code>gemma3:1b</code>, and <a href="https://github.com/anomalyco/opencode">opencode</a>.</li>
+    <li><strong>Code</strong> — <code>harness/runner.py</code> prompts <code>gemma3:1b</code> via <code>ollama run</code>, extracts the last code block and writes <code>src/rule30.s</code> (<code>harness/loop.py</code>, which drives opencode, has no committed run yet).</li>
+    <li><strong>Judge</strong> — An oracle in the same sandbox assembles each iteration, runs it in <code>--ppm</code> mode, pixel-diffs it against a Python reference, and records binary size. The prompt escalates on a fixed schedule (few-shot, then scaffold-fill); scores are recorded, not yet fed back.</li>
+    <li><strong>Boot</strong> — Planned, not yet run: <code>qemu-system-x86_64</code> boots a small Linux image straight into the agent-built ELF on a framebuffer, and <code>bpf/trace.bt</code> traces its syscalls and framebuffer writes.</li>
+    <li><strong>Share</strong> — Planned, not yet run: <code>islo share</code> exposes the framebuffer stream and the eBPF event stream (<code>harness/bridge_fb.py</code>, <code>harness/bridge_bpf.py</code>) so the panes below can render them.</li>
   </ol>
 </section>
 
 <section id="live">
-  <h2>Live from the sandbox</h2>
+  <h2>Sandbox stream (offline)</h2>
+  <p class="note">No sandbox is attached and the stream bridges have not been run end to end. The framebuffer pane shows a procedural poster; the trace pane cycles a hand-written, illustrative sample.</p>
   <div class="live-grid">
     <div class="live-pane">
       <h3>Framebuffer</h3>
-      <div id="fb-stream" class="placeholder">Stream connects after a sandbox is forked.</div>
+      <div id="fb-stream" class="placeholder">No sandbox attached.</div>
     </div>
     <div class="live-pane">
-      <h3>eBPF trace</h3>
-      <pre id="bpf-stream" class="placeholder">[trace] waiting for a forked sandbox…</pre>
+      <h3>eBPF trace (illustrative sample)</h3>
+      <pre id="bpf-stream" class="placeholder">[sample trace, illustrative, not from a run]</pre>
     </div>
   </div>
 </section>
 
 <section id="convergence">
   <h2>Convergence</h2>
-  <p>Binary size and pixel-diff vs iteration, by target. Filled in after the first full agent run.</p>
-  <div id="convergence-chart" class="placeholder">chart will render here</div>
+  <p>Rule 30: 3 real iterations (24 May 2026), none correct yet. Mandelbrot and Julia: not attempted.</p>
+  <p class="note">Solid line: binary size (left axis). Dashed line: pixel diff % (right axis). Iterations 1–2 assembled but wrote only a 3-byte header; iteration 3 did not assemble, so its size is plotted as 0.</p>
+  <div id="convergence-chart" class="placeholder">The chart needs JavaScript. The data is in <a href="https://github.com/zozo123/wolfram-fb0/blob/main/iterations/index.json">iterations/index.json</a>.</div>
+</section>
+
+<section id="run">
+  <h2>Run it</h2>
+  <p>Runs on <a href="https://islo.dev">islo.dev</a> (the author's employer); needs an islo account.</p>
+  <pre><code>islo use wolfram-fb0 --source https://github.com/zozo123/wolfram-fb0
+# inside the sandbox: the loop that produced the committed iterations
+python3 harness/runner.py --target rule30 --max-iters 8</code></pre>
+  <p>Running it on your own Linux machine needs <code>nasm</code>, <code>ld</code>, <code>qemu-system-x86_64</code>, <code>bpftrace</code>, Python 3 (<code>pillow</code>, <code>numpy</code>) and Ollama with <code>gemma3:1b</code>.</p>
 </section>
 
 <section id="provenance">
   <h2>Lineage</h2>
-  <p><a href="https://www.fractint.org/">Fractint</a> (1988) · <a href="https://github.com/mrmcsoftware/FractalAsm">FractalAsm</a> · <a href="https://www.wolframscience.com/nks/">A New Kind of Science</a> · <a href="https://islo.dev">islo</a> · <a href="https://github.com/sst/opencode">opencode</a></p>
-</section>
-
-<section id="try-islo">
-  <h2>Try islo</h2>
-  <p>Every new account on <a href="https://www.islo.dev">islo.dev</a> ships with <strong>$50 of free credit — no card required</strong>. That's enough to spin a real-VM sandbox like this one and run the full convergence loop end-to-end yourself.</p>
-  <p class="cta-row">
-    <a class="cta primary" href="https://www.islo.dev">Get $50 credit on islo →</a>
-    <a class="cta ghost" href="https://github.com/zozo123/wolfram-fb0">Code on GitHub</a>
-  </p>
+  <p><a href="https://www.fractint.org/">Fractint</a> (1988) · <a href="https://github.com/mrmcsoftware/FractalAsm">FractalAsm</a> · <a href="https://www.wolframscience.com/nks/">A New Kind of Science</a> · <a href="https://islo.dev">islo</a> · <a href="https://github.com/anomalyco/opencode">opencode</a></p>
 </section>
 
 <footer>
-  <p>MIT licensed. <a href="https://github.com/zozo123/wolfram-fb0">Source</a>. Built by <a href="https://www.linkedin.com/in/yossi-eliaz">Yossi Eliaz</a> (<a href="https://github.com/zozo123">zozo123</a>) for <a href="https://www.islo.dev">islo.dev</a>.</p>
+  <p>MIT licensed. <a href="https://github.com/zozo123/wolfram-fb0">Source</a>. Built by <a href="https://yossieliaz.netlify.app/">Yossi Eliaz</a>, who works on islo.dev · <a href="https://zozo123.github.io/">More experiments</a></p>
 </footer>
 
-<script src="rule30.js?v=2" defer></script>
-<script src="viewer.js?v=2" defer></script>
-<script src="chart.js?v=2" defer></script>
+<script src="rule30.js?v=3" defer></script>
+<script src="viewer.js?v=3" defer></script>
+<script src="chart.js?v=3" defer></script>
 </body>
 </html>

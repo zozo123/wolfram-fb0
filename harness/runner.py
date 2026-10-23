@@ -98,8 +98,11 @@ class IterResult:
 
 
 def update_index(target: str, results: list[IterResult]) -> None:
-    """Rewrite iterations/index.json from real results, preserving other targets'
-    placeholder/real data."""
+    """Rewrite this target's entry in iterations/index.json from real results.
+
+    Other targets' entries are left as they are, and the note names only the
+    targets this runner has actually run, so the file never labels data it
+    did not produce as real."""
     idx: dict = json.loads(INDEX_JSON.read_text()) if INDEX_JSON.exists() else {"targets": {}}
     idx.setdefault("targets", {})
     idx["targets"][target] = [
@@ -112,7 +115,13 @@ def update_index(target: str, results: list[IterResult]) -> None:
         }
         for r in results
     ]
-    idx["_note"] = f"Real data. Last updated {now_tag()} by harness/runner.py."
+    ran = sorted(set(idx.get("_runner_targets", [])) | {target})
+    idx["_runner_targets"] = ran
+    others = sorted(t for t in idx["targets"] if t not in ran)
+    note = f"{', '.join(ran)}: real runs by harness/runner.py (last updated {now_tag()})."
+    if others:
+        note += f" {', '.join(others)}: not attempted by harness/runner.py."
+    idx["_note"] = note
     INDEX_JSON.write_text(json.dumps(idx, indent=2))
 
 

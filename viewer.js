@@ -9,8 +9,8 @@
 //                 for browser preview). With no param we render a static
 //                 placeholder so the page works on a cold GitHub Pages load.
 //   #bpf-stream — JSONL eBPF events. Real wire format. ?bpf=<wss-url> attaches;
-//                 with no param we cycle a 10-line sample every second so the
-//                 pane is never empty during demos.
+//                 with no param we cycle a 10-line illustrative sample (hand
+//                 written, not captured from a run) under a visible label.
 //
 // No deps. ES6+. Static-host friendly (no build step).
 
@@ -81,7 +81,7 @@
     pane.textContent = "";
     pane.style.padding = "0";
     pane.style.background = "#000";
-    pane.style.minHeight = "240px";
+    pane.style.minHeight = "0";
 
     const canvas = document.createElement("canvas");
     canvas.width = 640;
@@ -115,7 +115,7 @@
       ctx.fillRect(0, H - 28, W, 28);
       ctx.fillStyle = "#22c55e";
       ctx.font = "12px ui-monospace, Menlo, monospace";
-      ctx.fillText("[poster]  fb0 stream offline — fork a sandbox to see the real fractal", 12, H - 10);
+      ctx.fillText("[poster]  fb0 stream offline — no sandbox attached", 12, H - 10);
       t = (t + 2) & 0xff;
     }
     frame();
@@ -151,10 +151,12 @@
   }
 
   function mountSampleBpf(pane) {
-    // STUB: 10 representative events from a real run, recycled every second so
-    // the pane scrolls during the demo.
+    // STUB: 10 hand-written, illustrative events (not captured from a run; the
+    // ELF they name has not been built yet), recycled every second. The label
+    // line stays pinned at the top so the sample is never mistaken for live data.
     pane.classList.remove("placeholder");
-    pane.textContent = "";
+    const LABEL = "[sample trace, illustrative, not from a run]\n";
+    pane.textContent = LABEL;
     const sample = [
       {ts: "0.0001", evt: "execve", arg: "/dist/rule30.elf"},
       {ts: "0.0003", evt: "openat", arg: "/dev/fb0 O_RDWR"},
@@ -169,9 +171,13 @@
     ];
     let idx = 0;
     const MAX_LINES = 120;
+    const lines = [];
     function tick() {
       const e = sample[idx % sample.length];
-      appendBpf(pane, formatBpfLine(JSON.stringify(e)), MAX_LINES);
+      lines.push(formatBpfLine(JSON.stringify(e)));
+      if (lines.length > MAX_LINES) lines.shift();
+      pane.textContent = LABEL + lines.join("");
+      pane.scrollTop = pane.scrollHeight;
       idx++;
     }
     tick();

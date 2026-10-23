@@ -55,8 +55,11 @@
     const ysSize = (b) => M.t + innerH - (b / maxSize) * innerH;
     const ysPct  = (p) => M.t + innerH - (Math.max(0, Math.min(100, p)) / 100) * innerH;
 
-    const svg = el("svg", { xmlns: SVG_NS, viewBox: `0 0 ${W} ${H}`, width: "100%", height: "auto", role: "img", "aria-label": "convergence chart" });
+    // No height attribute: "auto" is not a valid SVG length. The viewBox sets
+    // the aspect ratio and CSS height:auto scales it with the 100% width.
+    const svg = el("svg", { xmlns: SVG_NS, viewBox: `0 0 ${W} ${H}`, width: "100%", role: "img", "aria-label": "convergence chart" });
     svg.style.display = "block";
+    svg.style.height = "auto";
 
     // Background panel.
     svg.appendChild(el("rect", { x: 0, y: 0, width: W, height: H, fill: BG, rx: 6 }));
